@@ -90,6 +90,7 @@ final class DriverManager
         'pgsql'              => PgSQL\Driver::class,
         'sqlsrv'             => SQLSrv\Driver::class,
         'sqlite3'            => SQLite3\Driver::class,
+        'kdb'                => PDO\KingBase\Driver::class,
     ];
 
     /**
@@ -105,6 +106,7 @@ final class DriverManager
         'mysql'      => 'pdo_mysql',
         'mysql2'     => 'pdo_mysql', // Amazon RDS, for some weird reason
         'postgres'   => 'pdo_pgsql',
+        'kdb'        => 'pdo_kdb',
         'postgresql' => 'pdo_pgsql',
         'pgsql'      => 'pdo_pgsql',
         'sqlite'     => 'pdo_sqlite',
