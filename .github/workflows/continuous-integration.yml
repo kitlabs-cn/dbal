@@ -111,13 +111,14 @@ jobs:
           - "8.3"
         oracle-version:
           - "21"
+          - "23"
         include:
           - php-version: "7.4"
             oracle-version: "11"
 
     services:
       oracle:
-        image: gvenzl/oracle-xe:${{ matrix.oracle-version }}
+        image: gvenzl/oracle-${{ matrix.oracle-version < 23 && 'xe' || 'free'  }}:${{ matrix.oracle-version }}
         env:
           ORACLE_PASSWORD: oracle
         ports:
@@ -148,7 +149,7 @@ jobs:
           composer-options: "--ignore-platform-req=php+"
 
       - name: "Run PHPUnit"
-        run: "vendor/bin/phpunit -c ci/github/phpunit/oci8.xml --coverage-clover=coverage.xml"
+        run: "vendor/bin/phpunit -c ci/github/phpunit/oci8${{ matrix.oracle-version < 23 && '-21' || ''  }}.xml --coverage-clover=coverage.xml"
 
       - name: "Upload coverage file"
         uses: "actions/upload-artifact@v3"
@@ -169,13 +170,14 @@ jobs:
           - "8.3"
         oracle-version:
           - "21"
+          - "23"
         include:
           - php-version: "7.4"
             oracle-version: "11"
 
     services:
       oracle:
-        image: gvenzl/oracle-xe:${{ matrix.oracle-version }}
+        image: gvenzl/oracle-${{ matrix.oracle-version < 23 && 'xe' || 'free'  }}:${{ matrix.oracle-version }}
         env:
           ORACLE_PASSWORD: oracle
         ports:
@@ -206,7 +208,7 @@ jobs:
           composer-options: "--ignore-platform-req=php+"
 
       - name: "Run PHPUnit"
-        run: "vendor/bin/phpunit -c ci/github/phpunit/pdo_oci.xml --coverage-clover=coverage.xml"
+        run: "vendor/bin/phpunit -c ci/github/phpunit/pdo_oci${{ matrix.oracle-version < 23 && '-21' || ''  }}.xml --coverage-clover=coverage.xml"
 
       - name: "Upload coverage file"
         uses: "actions/upload-artifact@v3"
@@ -294,33 +296,35 @@ jobs:
         php-version:
           - "7.4"
         mariadb-version:
-          - "10.0"
-          - "10.2"
-          - "10.5"
-          - "10.7"
-          - "10.9"
-          - "10.11"
+          - "10.0"  # Oldest version supported by DBAL
+          - "10.4"  # LTS (Jun 2024)
+          - "10.5"  # LTS (Jun 2025)
+          - "10.6"  # LTS (Jul 2026)
+          - "10.11" # LTS (Feb 2028)
+          - "11.0"  # STS (Jun 2024)
+          - "11.1"  # STS (Aug 2024)
+          - "11.2"  # STS (Nov 2024)
         extension:
           - "mysqli"
           - "pdo_mysql"
         include:
           - php-version: "8.2"
-            mariadb-version: "10.7"
+            mariadb-version: "10.6"
             extension: "mysqli"
           - php-version: "8.2"
-            mariadb-version: "10.7"
+            mariadb-version: "10.6"
             extension: "pdo_mysql"
           - php-version: "8.2"
-            mariadb-version: "10.11"
+            mariadb-version: "11.2"
             extension: "mysqli"
           - php-version: "8.2"
-            mariadb-version: "10.11"
+            mariadb-version: "11.2"
             extension: "pdo_mysql"
           - php-version: "8.3"
-            mariadb-version: "10.11"
+            mariadb-version: "11.2"
             extension: "mysqli"
           - php-version: "8.3"
-            mariadb-version: "10.11"
+            mariadb-version: "11.2"
             extension: "pdo_mysql"
 
     services:
@@ -331,7 +335,7 @@ jobs:
           MYSQL_DATABASE: "doctrine_tests"
 
         options: >-
-          --health-cmd "mysqladmin ping --silent"
+          --health-cmd "mariadb-admin ping --silent || mysqladmin ping --silent"
 
         ports:
           - "3306:3306"
@@ -377,7 +381,7 @@ jobs:
         mysql-version:
           - "5.7"
           - "8.0"
-          - "8.1"
+          - "8.2"
         extension:
           - "mysqli"
           - "pdo_mysql"
@@ -538,19 +542,22 @@ jobs:
       ibm_db2:
         image: "icr.io/db2_community/db2:11.5.8.0"
         env:
+          DB2INSTANCE: "db2inst1"
           DB2INST1_PASSWORD: "Doctrine2018"
           LICENSE: "accept"
           DBNAME: "doctrine"
 
-        options: "--privileged=true"
+        options: >-
+          --health-cmd "su - ${DB2INSTANCE} -c \"db2 -t CONNECT TO ${DBNAME};\""
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+          --privileged
 
         ports:
           - "50000:50000"
 
     steps:
-      - name: "Perform healthcheck from the outside"
-        run: "docker logs -f ${{ job.services.ibm_db2.id }} | sed '/(*) Setup has completed./ q'"
-
       - name: "Create temporary tablespace"
         run: "docker exec ${{ job.services.ibm_db2.id }} su - db2inst1 -c 'db2 -t CONNECT TO doctrine; db2 -t CREATE USER TEMPORARY TABLESPACE doctrine_tbsp PAGESIZE 4 K;'"
 

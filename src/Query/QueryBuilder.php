@@ -105,11 +105,15 @@ class QueryBuilder
 
     /**
      * The type of query this is. Can be select, update or delete.
+     *
+     * @psalm-var self::SELECT|self::DELETE|self::UPDATE|self::INSERT
      */
     private int $type = self::SELECT;
 
     /**
      * The state of the query object. Can be dirty or clean.
+     *
+     * @psalm-var self::STATE_*
      */
     private int $state = self::STATE_CLEAN;
 
@@ -208,6 +212,7 @@ class QueryBuilder
      * @deprecated The builder state is an internal concern.
      *
      * @return int Either QueryBuilder::STATE_DIRTY or QueryBuilder::STATE_CLEAN.
+     * @psalm-return self::STATE_*
      */
     public function getState()
     {
@@ -413,7 +418,6 @@ class QueryBuilder
                 break;
 
             case self::SELECT:
-            default:
                 $sql = $this->getSQLForSelect();
                 break;
         }
@@ -450,7 +454,7 @@ class QueryBuilder
                 'doctrine/dbal',
                 'https://github.com/doctrine/dbal/pull/5550',
                 'Using NULL as prepared statement parameter type is deprecated.'
-                    . 'Omit or use Parameter::STRING instead',
+                    . 'Omit or use ParameterType::STRING instead',
             );
         }
 
