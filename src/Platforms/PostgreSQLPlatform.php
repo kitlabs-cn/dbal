@@ -1241,6 +1241,8 @@ SQL
             'varchar'          => Types::STRING,
             'year'             => Types::DATE_MUTABLE,
             '_varchar'         => Types::STRING,
+            'name'             => Types::STRING,
+            'oid'              => Types::STRING,
         ];
     }
 
