@@ -579,14 +579,14 @@ class PostgreSQLSchemaManagerTest extends SchemaManagerFunctionalTestCase
 
         $this->connection->executeStatement('CREATE EXTENSION IF NOT EXISTS pg_prewarm');
         $originalTableOid = $this->connection->fetchOne(
-            'SELECT oid FROM pg_class WHERE pg_class.relname = ?',
+            'SELECT oid FROM sys_class WHERE sys_class.relname = ?',
             [$table],
         );
 
         $getConflictingOidSql = <<<'SQL'
 SELECT objid
-FROM pg_depend
-JOIN pg_extension as ex on ex.oid = pg_depend.refobjid
+FROM sys_depend
+JOIN pg_extension as ex on ex.oid = sys_depend.refobjid
 WHERE ex.extname = 'pg_prewarm'
 ORDER BY objid
 LIMIT 1
@@ -594,15 +594,15 @@ SQL;
         $conflictingOid       = $this->connection->fetchOne($getConflictingOidSql);
 
         $this->connection->executeStatement(
-            'UPDATE pg_attribute SET attrelid = ? WHERE attrelid = ?',
+            'UPDATE sys_attribute SET attrelid = ? WHERE attrelid = ?',
             [$conflictingOid, $originalTableOid],
         );
         $this->connection->executeStatement(
-            'UPDATE pg_description SET objoid = ? WHERE objoid = ?',
+            'UPDATE sys_description SET objoid = ? WHERE objoid = ?',
             [$conflictingOid, $originalTableOid],
         );
         $this->connection->executeStatement(
-            'UPDATE pg_class SET oid = ? WHERE oid = ?',
+            'UPDATE sys_class SET oid = ? WHERE oid = ?',
             [$conflictingOid, $originalTableOid],
         );
 
@@ -610,15 +610,15 @@ SQL;
 
         // revert to the database to original state prior to asserting result
         $this->connection->executeStatement(
-            'UPDATE pg_attribute SET attrelid = ? WHERE attrelid = ?',
+            'UPDATE sys_attribute SET attrelid = ? WHERE attrelid = ?',
             [$originalTableOid, $conflictingOid],
         );
         $this->connection->executeStatement(
-            'UPDATE pg_description SET objoid = ? WHERE objoid = ?',
+            'UPDATE sys_description SET objoid = ? WHERE objoid = ?',
             [$originalTableOid, $conflictingOid],
         );
         $this->connection->executeStatement(
-            'UPDATE pg_class SET oid = ? WHERE oid = ?',
+            'UPDATE sys_class SET oid = ? WHERE oid = ?',
             [$originalTableOid, $conflictingOid],
         );
         $this->connection->executeStatement(sprintf('DROP TABLE IF EXISTS %s', $table));

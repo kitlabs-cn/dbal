@@ -127,7 +127,7 @@ class PostgreSQLSchemaManager extends AbstractSchemaManager
             <<<'SQL'
 SELECT schema_name
 FROM   information_schema.schemata
-WHERE  schema_name NOT LIKE 'pg\_%'
+WHERE  schema_name NOT LIKE 'sys\_%'
 AND    schema_name != 'information_schema'
 SQL,
         );
@@ -296,7 +296,7 @@ SQL,
         foreach ($tableIndexes as $row) {
             $colNumbers    = array_map('intval', explode(' ', $row['indkey']));
             $columnNameSql = sprintf(
-                'SELECT attnum, attname FROM pg_attribute WHERE attrelid=%d AND attnum IN (%s) ORDER BY attnum ASC',
+                'SELECT attnum, attname FROM sys_attribute WHERE attrelid=%d AND attnum IN (%s) ORDER BY attnum ASC',
                 $row['indrelid'],
                 implode(' ,', $colNumbers),
             );
@@ -354,7 +354,7 @@ SQL,
      */
     protected function _getPortableSequenceDefinition($sequence)
     {
-        if ($sequence['schemaname'] !== 'public') {
+        if ($sequence['schemaname'] !== 'PUBLIC') {
             $sequenceName = $sequence['schemaname'] . '.' . $sequence['relname'];
         } else {
             $sequenceName = $sequence['relname'];
@@ -379,10 +379,9 @@ SQL,
         $matches = [];
 
         $autoincrement = false;
-
         if (
             $tableColumn['default'] !== null
-            && preg_match("/^nextval\('(.*)'(::.*)?\)$/", $tableColumn['default'], $matches) === 1
+            && preg_match("/^nextval\('(.*)'(::.*)?\)$/", strtolower($tableColumn['default']), $matches) === 1
         ) {
             $tableColumn['sequence'] = $matches[1];
             $tableColumn['default']  = null;
@@ -598,7 +597,7 @@ SELECT quote_ident(table_name) AS table_name,
        table_schema AS schema_name
 FROM information_schema.tables
 WHERE table_catalog = ?
-  AND table_schema NOT LIKE 'pg\_%'
+  AND table_schema NOT LIKE 'sys\_%'
   AND table_schema != 'information_schema'
   AND table_name != 'geometry_columns'
   AND table_name != 'spatial_ref_sys'
@@ -621,36 +620,36 @@ SQL;
             quote_ident(a.attname) AS field,
             t.typname AS type,
             format_type(a.atttypid, a.atttypmod) AS complete_type,
-            (SELECT tc.collcollate FROM pg_catalog.pg_collation tc WHERE tc.oid = a.attcollation) AS collation,
-            (SELECT t1.typname FROM pg_catalog.pg_type t1 WHERE t1.oid = t.typbasetype) AS domain_type,
+            (SELECT tc.collcollate FROM sys_catalog.sys_collation tc WHERE tc.oid = a.attcollation) AS collation,
+            (SELECT t1.typname FROM sys_catalog.sys_type t1 WHERE t1.oid = t.typbasetype) AS domain_type,
             (SELECT format_type(t2.typbasetype, t2.typtypmod) FROM
-              pg_catalog.pg_type t2 WHERE t2.typtype = 'd' AND t2.oid = a.atttypid) AS domain_complete_type,
+              sys_catalog.sys_type t2 WHERE t2.typtype = 'd' AND t2.oid = a.atttypid) AS domain_complete_type,
             a.attnotnull AS isnotnull,
             (SELECT 't'
-             FROM pg_index
-             WHERE c.oid = pg_index.indrelid
-                AND pg_index.indkey[0] = a.attnum
-                AND pg_index.indisprimary = 't'
+             FROM sys_index
+             WHERE c.oid = sys_index.indrelid
+                AND sys_index.indkey[0] = a.attnum
+                AND sys_index.indisprimary = 't'
             ) AS pri,
-            (SELECT pg_get_expr(adbin, adrelid)
-             FROM pg_attrdef
-             WHERE c.oid = pg_attrdef.adrelid
-                AND pg_attrdef.adnum=a.attnum
+            (SELECT sys_get_expr(adbin, adrelid)
+             FROM sys_attrdef
+             WHERE c.oid = sys_attrdef.adrelid
+                AND sys_attrdef.adnum=a.attnum
             ) AS default,
-            (SELECT pg_description.description
-                FROM pg_description WHERE pg_description.objoid = c.oid AND a.attnum = pg_description.objsubid
+            (SELECT sys_description.description
+                FROM sys_description WHERE sys_description.objoid = c.oid AND a.attnum = sys_description.objsubid
             ) AS comment
-            FROM pg_attribute a
-                INNER JOIN pg_class c
+            FROM sys_attribute a
+                INNER JOIN sys_class c
                     ON c.oid = a.attrelid
-                INNER JOIN pg_type t
+                INNER JOIN sys_type t
                     ON t.oid = a.atttypid
-                INNER JOIN pg_namespace n
+                INNER JOIN sys_namespace n
                     ON n.oid = c.relnamespace
-                LEFT JOIN pg_depend d
+                LEFT JOIN sys_depend d
                     ON d.objid = c.oid
                         AND d.deptype = 'e'
-                        AND d.classid = (SELECT oid FROM pg_class WHERE relname = 'pg_class')
+                        AND d.classid = (SELECT oid FROM sys_class WHERE relname = 'sys_class')
 SQL;
 
         $conditions = array_merge([
@@ -678,14 +677,14 @@ SQL;
                    i.indisprimary,
                    i.indkey,
                    i.indrelid,
-                   pg_get_expr(indpred, indrelid) AS "where"
-              FROM pg_index i
-                   JOIN pg_class AS tc ON tc.oid = i.indrelid
-                   JOIN pg_namespace tn ON tn.oid = tc.relnamespace
-                   JOIN pg_class AS ic ON ic.oid = i.indexrelid
+                   sys_get_expr(indpred, indrelid) AS "where"
+              FROM sys_index i
+                   JOIN sys_class AS tc ON tc.oid = i.indrelid
+                   JOIN sys_namespace tn ON tn.oid = tc.relnamespace
+                   JOIN sys_class AS ic ON ic.oid = i.indexrelid
              WHERE ic.oid IN (
                 SELECT indexrelid
-                FROM pg_index i, pg_class c, pg_namespace n
+                FROM sys_index i, sys_class c, sys_namespace n
 SQL;
 
         $conditions = array_merge([
@@ -708,14 +707,14 @@ SQL;
 
         $sql .= <<<'SQL'
                   quote_ident(r.conname) as conname,
-                  pg_get_constraintdef(r.oid, true) as condef
-                  FROM pg_constraint r
-                      JOIN pg_class AS tc ON tc.oid = r.conrelid
-                      JOIN pg_namespace tn ON tn.oid = tc.relnamespace
+                  sys_get_constraintdef(r.oid, true) as condef
+                  FROM sys_constraint r
+                      JOIN sys_class AS tc ON tc.oid = r.conrelid
+                      JOIN sys_namespace tn ON tn.oid = tc.relnamespace
                   WHERE r.conrelid IN
                   (
                       SELECT c.oid
-                      FROM pg_class c, pg_namespace n
+                      FROM sys_class c, sys_namespace n
 SQL;
 
         $conditions = array_merge(['n.oid = c.relnamespace'], $this->buildQueryConditions($tableName));
@@ -733,9 +732,9 @@ SQL;
         $sql = <<<'SQL'
 SELECT c.relname,
        CASE c.relpersistence WHEN 'u' THEN true ELSE false END as unlogged,
-       obj_description(c.oid, 'pg_class') AS comment
-FROM pg_class c
-     INNER JOIN pg_namespace n
+       obj_description(c.oid, 'sys_class') AS comment
+FROM sys_class c
+     INNER JOIN sys_namespace n
          ON n.oid = c.relnamespace
 SQL;
 
@@ -767,7 +766,7 @@ SQL;
             $conditions[] = 'c.relname = ' . $this->_platform->quoteStringLiteral($identifier->getName());
         }
 
-        $conditions[] = "n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')";
+        $conditions[] = "n.nspname NOT IN ('sys_catalog', 'information_schema', 'sys_toast')";
 
         return $conditions;
     }

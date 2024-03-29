@@ -130,7 +130,7 @@ class Sequence extends AbstractAsset
         $tableName         = $table->getShortestName($table->getNamespaceName());
         $tableSequenceName = sprintf('%s_%s_seq', $tableName, $column->getShortestName($table->getNamespaceName()));
 
-        return $tableSequenceName === $sequenceName;
+        return $tableSequenceName === strtolower($sequenceName);
     }
 
     /**
