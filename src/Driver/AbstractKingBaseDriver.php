@@ -7,9 +7,9 @@ use Doctrine\DBAL\Driver\API\ExceptionConverter;
 use Doctrine\DBAL\Driver\API\PostgreSQL;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\DBAL\Platforms\PostgreSQL100Platform;
-use Doctrine\DBAL\Platforms\PostgreSQL94Platform;
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Platforms\KingBase100Platform;
+use Doctrine\DBAL\Platforms\KingBase94Platform;
+use Doctrine\DBAL\Platforms\KingBasePlatform;
 use Doctrine\DBAL\Schema\PostgreSQLSchemaManager;
 use Doctrine\DBAL\VersionAwarePlatformDriver;
 use Doctrine\Deprecations\Deprecation;
@@ -41,7 +41,7 @@ abstract class AbstractKingBaseDriver implements VersionAwarePlatformDriver
         $version      = $majorVersion . '.' . $minorVersion . '.' . $patchVersion;
 
         if (version_compare($version, '10.0', '>=')) {
-            return new PostgreSQL100Platform();
+            return new KingBase100Platform();
         }
 
         Deprecation::trigger(
@@ -51,7 +51,7 @@ abstract class AbstractKingBaseDriver implements VersionAwarePlatformDriver
                 . ' Consider upgrading to Postgres 10 or later.',
         );
 
-        return new PostgreSQL94Platform();
+        return new KingBase94Platform();
     }
 
     /**
@@ -59,13 +59,13 @@ abstract class AbstractKingBaseDriver implements VersionAwarePlatformDriver
      */
     public function getDatabasePlatform()
     {
-        return new PostgreSQL94Platform();
+        return new KingBase94Platform();
     }
 
     /**
      * {@inheritDoc}
      *
-     * @deprecated Use {@link PostgreSQLPlatform::createSchemaManager()} instead.
+     * @deprecated Use {@link KingBasePlatform::createSchemaManager()} instead.
      */
     public function getSchemaManager(Connection $conn, AbstractPlatform $platform)
     {
@@ -73,10 +73,10 @@ abstract class AbstractKingBaseDriver implements VersionAwarePlatformDriver
             'doctrine/dbal',
             'https://github.com/doctrine/dbal/pull/5458',
             'AbstractPostgreSQLDriver::getSchemaManager() is deprecated.'
-                . ' Use PostgreSQLPlatform::createSchemaManager() instead.',
+                . ' Use KingBasePlatform::createSchemaManager() instead.',
         );
 
-        assert($platform instanceof PostgreSQLPlatform);
+        assert($platform instanceof KingBasePlatform);
 
         return new PostgreSQLSchemaManager($conn, $platform);
     }
