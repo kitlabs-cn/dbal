@@ -1243,6 +1243,7 @@ SQL
             '_varchar'         => Types::STRING,
             'name'             => Types::STRING,
             'oid'              => Types::STRING,
+            'int2vector'       => Types::STRING,
         ];
     }
 
