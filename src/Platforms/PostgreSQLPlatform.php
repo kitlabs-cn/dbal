@@ -622,7 +622,7 @@ SQL
                         $oldColumnName,
                     );
 
-                    $sql[] = 'CREATE SEQUENCE ' . $seqName;
+                    $sql[] = 'CREATE SEQUENCE IF NOT EXISTS ' . $seqName;
                     $sql[] = "SELECT setval('" . $seqName . "', (SELECT MAX(" . $oldColumnName . ') FROM '
                         . $tableNameSQL . '))';
                     $query = 'ALTER ' . $oldColumnName . " SET DEFAULT nextval('" . $seqName . "')";
@@ -772,7 +772,7 @@ SQL
      */
     public function getCreateSequenceSQL(Sequence $sequence)
     {
-        return 'CREATE SEQUENCE ' . $sequence->getQuotedName($this) .
+        return 'CREATE SEQUENCE IF NOT EXISTS ' . $sequence->getQuotedName($this) .
             ' INCREMENT BY ' . $sequence->getAllocationSize() .
             ' MINVALUE ' . $sequence->getInitialValue() .
             ' START ' . $sequence->getInitialValue() .
